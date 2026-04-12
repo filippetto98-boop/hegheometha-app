@@ -17,7 +17,17 @@ export default function Spese() {
   const [sending, setSending] = useState(false)
   const [msg, setMsg] = useState(null)
   const [scanning, setScanning] = useState(false)
+  const [safeBottom, setSafeBottom] = useState(34)
   const fileRef = useRef(null)
+
+  useEffect(() => {
+    const probe = document.createElement('div')
+    probe.style.cssText = 'position:fixed;bottom:0;left:0;width:1px;height:1px;padding-bottom:env(safe-area-inset-bottom);visibility:hidden'
+    document.body.appendChild(probe)
+    const computed = parseInt(getComputedStyle(probe).paddingBottom) || 0
+    document.body.removeChild(probe)
+    if (computed > 0) setSafeBottom(computed)
+  }, [])
 
   const load = () => getSpese().then(setData).catch(() => {}).finally(() => setLoading(false))
   useEffect(() => { load() }, [])
@@ -124,7 +134,7 @@ export default function Spese() {
               onClick={e => e.stopPropagation()}
               className="bg-white w-full max-w-lg rounded-t-[24px] flex flex-col"
               style={{ maxHeight: '90vh' }}>
-              <div className="overflow-y-auto px-6 pt-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)' }}>
+              <div className="overflow-y-auto px-6 pt-6" style={{ paddingBottom: `${safeBottom + 24}px` }}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-bold">Nuova spesa</h2>
                 <button onClick={() => setShowModal(false)} className="text-[#9E96AB]"><X size={22} /></button>
