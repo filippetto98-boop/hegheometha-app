@@ -28,3 +28,7 @@ body {
 .pb-safe {
   padding-bottom: max(80px, calc(70px + env(safe-area-inset-bottom)));
 }
+
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  .safe-bottom { padding-bottom: env(safe-area-inset-bottom) !important; }
+}

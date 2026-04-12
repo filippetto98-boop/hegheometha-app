@@ -122,8 +122,8 @@ export default function Spese() {
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white w-full max-w-lg rounded-t-[24px] p-6"
-              style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
+              className="bg-white w-full max-w-lg rounded-t-[24px] px-6 pt-6 pb-10"
+              style={{ paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-bold">Nuova spesa</h2>
                 <button onClick={() => setShowModal(false)} className="text-[#9E96AB]"><X size={22} /></button>
