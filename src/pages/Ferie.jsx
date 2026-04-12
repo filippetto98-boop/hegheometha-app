@@ -51,7 +51,8 @@ export default function Ferie() {
       const d = await getDashboard()
       setRichieste(d.richieste_assenza || [])
     } catch (err) {
-      setMsg({ ok: false, text: err.response?.data?.errore || 'Errore' })
+      const errMsg = err?.response?.data?.errore || err?.response?.data?.detail || JSON.stringify(err?.response?.data) || 'Errore di connessione'
+      setMsg({ ok: false, text: errMsg })
     } finally { setSending(false) }
   }
 
