@@ -7,3 +7,4 @@ export const richiediAssenza = (data) => api.post('/api/hr/assenza/', data).then
 export const gestisciAssenza = (id, azione, note = '') => api.post(`/api/hr/assenza/${id}/gestisci/`, { azione, note }).then(r => r.data)
 export const getSpese = () => api.get('/api/hr/spese/').then(r => r.data)
 export const aggiungiSpesaRapida = (data) => api.post('/api/hr/spesa-rapida/', data).then(r => r.data)
+export const getTurniMese = (mese) => api.get(`/api/hr/turni/?mese=${mese}`).then(r => r.data)

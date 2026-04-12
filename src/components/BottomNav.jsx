@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Calendar, Receipt, Bell, Package } from 'lucide-react'
+import { Home, Calendar, CalendarDays, Bell, Package } from 'lucide-react'
 import { getStoredUser } from '../api/auth'
 
 export default function BottomNav() {
@@ -17,14 +17,14 @@ export default function BottomNav() {
     ? [
         { to: '/dashboard', icon: Home, label: 'Home' },
         { to: '/ferie', icon: Calendar, label: 'Permessi' },
-        { to: '/spese', icon: Receipt, label: 'Spese' },
+        { to: '/calendario', icon: CalendarDays, label: 'Turni' },
         { to: '/magazzino', icon: Package, label: 'Magazzino' },
         { to: '/notifiche', icon: Bell, label: 'Notifiche' },
       ]
     : [
         { to: '/dashboard', icon: Home, label: 'Home' },
         { to: '/ferie', icon: Calendar, label: 'Permessi' },
-        { to: '/spese', icon: Receipt, label: 'Spese' },
+        { to: '/calendario', icon: CalendarDays, label: 'Turni' },
         { to: '/notifiche', icon: Bell, label: 'Notifiche' },
       ]
 

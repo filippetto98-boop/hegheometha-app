@@ -8,6 +8,7 @@ import Magazzino from './pages/Magazzino'
 import Notifiche from './pages/Notifiche'
 import Ferie from './pages/Ferie'
 import Spese from './pages/Spese'
+import Calendario from './pages/Calendario'
 
 function applyAccentColor() {
   const user = getStoredUser()
@@ -66,6 +67,9 @@ export default function App() {
           } />
           <Route path="/spese" element={
             <ProtectedRoute ruolo="dipendente"><Spese /></ProtectedRoute>
+          } />
+          <Route path="/calendario" element={
+            <ProtectedRoute ruolo="dipendente"><Calendario /></ProtectedRoute>
           } />
         </Routes>
       </AccentWatcher>
