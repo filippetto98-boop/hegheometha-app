@@ -14,6 +14,12 @@ function formattaData(dateStr) {
   return `${GIORNI[d.getDay()]} ${d.getDate()} ${MESI[d.getMonth()]} ${d.getFullYear()}`
 }
 
+function formatDataBreve(dateStr) {
+  if (!dateStr) return ''
+  const [y, m, d] = dateStr.split('-')
+  return `${d}/${m}/${y}`
+}
+
 function calcolaGiorni(inizio, fine) {
   if (!inizio || !fine) return 0
   return Math.ceil((new Date(fine) - new Date(inizio)) / (1000 * 60 * 60 * 24)) + 1
@@ -82,22 +88,35 @@ export default function Ferie() {
               <option value="altro">Altro</option>
             </select>
           </div>
-          <div className="w-full overflow-hidden mb-4">
+          <div className="w-full overflow-hidden mb-2">
             <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Dal</label>
             <input type="date" value={dataInizio} onChange={handleInizioChange}
-              style={{ maxWidth: '100%' }}
-              className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none" required />
+              style={{ maxWidth: '100%', paddingLeft: '16px', paddingRight: '16px', boxSizing: 'border-box' }}
+              className="w-full py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none appearance-none" required />
           </div>
+          {dataInizio && (
+            <div className="flex items-center justify-center my-1">
+              <div className="h-0.5 flex-1 rounded-full" style={{background:'var(--accent)', opacity: dataFine ? 1 : 0.3}} />
+              <span className="mx-2 text-xs font-bold" style={{color:'var(--accent)'}}>
+                {dataFine ? `${giorni} giorni` : '→'}
+              </span>
+              <div className="h-0.5 flex-1 rounded-full" style={{background:'var(--accent)', opacity: dataFine ? 1 : 0.3}} />
+            </div>
+          )}
           <div className="w-full overflow-hidden mb-4">
             <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Al</label>
             <input type="date" ref={fineRef} value={dataFine} onChange={e => setDataFine(e.target.value)}
-              style={{ maxWidth: '100%' }}
-              className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none" required />
+              style={{ maxWidth: '100%', paddingLeft: '16px', paddingRight: '16px', boxSizing: 'border-box' }}
+              className="w-full py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none appearance-none" required />
           </div>
           {dataInizio && dataFine && giorni > 0 && (
-            <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 text-sm font-semibold px-4 py-3 rounded-xl mb-4">
-              <Calendar size={16} />
-              <span>Dal {formattaData(dataInizio)} al {formattaData(dataFine)} — {giorni} giorn{giorni === 1 ? 'o' : 'i'}</span>
+            <div className="mb-4 text-center">
+              <div className="text-[15px] font-semibold text-[#1A1523]">
+                {formatDataBreve(dataInizio)} → {formatDataBreve(dataFine)}
+              </div>
+              <div className="text-[28px] font-extrabold mt-1" style={{color:'var(--accent)'}}>
+                {giorni} giorn{giorni === 1 ? 'o' : 'i'}
+              </div>
             </div>
           )}
           <div className="mb-4">
