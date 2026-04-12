@@ -17,6 +17,8 @@ const AVATAR_TESTI = ['#3C3489','#085041','#633806','#501313','#1E40AF','#5B21B6
 export default function DashboardTitolare() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [rifiutoId, setRifiutoId] = useState(null)
+  const [motivazione, setMotivazione] = useState('')
   const user = getStoredUser()
 
   useEffect(() => {
@@ -114,11 +116,28 @@ export default function DashboardTitolare() {
                   className="flex-1 h-11 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform">
                   <Check size={16} /> Approva
                 </button>
-                <button onClick={async () => { await gestisciAssenza(r.id, 'rifiuta'); setData(d => ({...d, richieste_in_attesa: d.richieste_in_attesa.filter(x => x.id !== r.id)})) }}
+                <button onClick={() => { setRifiutoId(rifiutoId === r.id ? null : r.id); setMotivazione('') }}
                   className="flex-1 h-11 rounded-xl bg-red-50 text-red-600 font-bold text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform">
                   <X size={16} /> Rifiuta
                 </button>
               </div>
+              {rifiutoId === r.id && (
+                <div className="mt-3 p-3 bg-red-50 rounded-xl">
+                  <textarea value={motivazione} onChange={e => setMotivazione(e.target.value)}
+                    placeholder="Motivazione del rifiuto *" rows={2}
+                    className="w-full px-3 py-2.5 bg-white border-[1.5px] border-red-200 rounded-xl text-[14px] focus:border-red-400 outline-none resize-none mb-2" />
+                  <button onClick={async () => {
+                    if (!motivazione.trim()) return
+                    await gestisciAssenza(r.id, 'rifiuta', motivazione)
+                    setData(d => ({...d, richieste_in_attesa: d.richieste_in_attesa.filter(x => x.id !== r.id)}))
+                    setRifiutoId(null); setMotivazione('')
+                  }}
+                    className="w-full h-10 rounded-xl bg-red-500 text-white font-bold text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform disabled:opacity-50"
+                    disabled={!motivazione.trim()}>
+                    Conferma rifiuto
+                  </button>
+                </div>
+              )}
             </div>
           ))}
         </Card>
