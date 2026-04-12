@@ -45,6 +45,7 @@ export default function Calendario() {
   const [turni, setTurni] = useState([])
   const [assenze, setAssenze] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedDay, setSelectedDay] = useState(null)
 
   const meseStr = `${anno}-${String(mese+1).padStart(2,'0')}`
 
@@ -92,8 +93,30 @@ export default function Calendario() {
     return celle
   }, [mese, anno])
 
-  const prev = () => { if (mese === 0) { setMese(11); setAnno(a => a-1) } else setMese(m => m-1) }
-  const next = () => { if (mese === 11) { setMese(0); setAnno(a => a+1) } else setMese(m => m+1) }
+  const prev = () => { setSelectedDay(null); if (mese === 0) { setMese(11); setAnno(a => a-1) } else setMese(m => m-1) }
+  const next = () => { setSelectedDay(null); if (mese === 11) { setMese(0); setAnno(a => a+1) } else setMese(m => m+1) }
+
+  const handleDayClick = (dataStr) => {
+    setSelectedDay(selectedDay === dataStr ? null : dataStr)
+  }
+
+  const GIORNI_FULL = ['Lun','Mar','Mer','Gio','Ven','Sab','Dom']
+  const settimanaSelezionata = useMemo(() => {
+    if (!selectedDay) return null
+    const d = new Date(selectedDay + 'T00:00:00')
+    let dayOfWeek = d.getDay() - 1
+    if (dayOfWeek < 0) dayOfWeek = 6
+    const lunedi = new Date(d)
+    lunedi.setDate(d.getDate() - dayOfWeek)
+    const giorni = []
+    for (let i = 0; i < 7; i++) {
+      const g = new Date(lunedi)
+      g.setDate(lunedi.getDate() + i)
+      const ds = toStr(g)
+      giorni.push({ data: ds, giorno: GIORNI_FULL[i], turno: turniMap[ds] || null, assenza: assenzeMap[ds] || null })
+    }
+    return giorni
+  }, [selectedDay, turniMap, assenzeMap])
 
   return (
     <Layout>
@@ -132,10 +155,16 @@ export default function Calendario() {
               const assenza = assenzeMap[dataStr]
               const isOggi = dataStr === toStr(oggi)
 
+              const isSelected = dataStr === selectedDay
+
               return (
-                <div key={dataStr} className="h-16 flex flex-col items-center justify-start pt-1.5">
+                <div key={dataStr} className={`h-16 flex flex-col items-center justify-start pt-1.5 cursor-pointer rounded-xl transition-colors ${
+                  isSelected ? 'bg-[var(--accent)]/[0.08]' : ''
+                }`} onClick={() => handleDayClick(dataStr)}>
                   <span className={`text-[13px] font-medium w-7 h-7 flex items-center justify-center rounded-full ${
-                    isOggi ? 'bg-[var(--accent)] text-white font-bold' : 'text-[#1A1523]'
+                    isOggi ? 'bg-[var(--accent)] text-white font-bold'
+                    : isSelected ? 'ring-2 ring-[var(--accent)] font-bold text-[var(--accent)]'
+                    : 'text-[#1A1523]'
                   }`}>
                     {cella.giorno}
                   </span>
@@ -171,6 +200,41 @@ export default function Calendario() {
         <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-red-500" /><span className="text-[10px] text-[#9E96AB]">Malattia</span></div>
         <div className="flex items-center gap-1"><span className="w-2 h-2 rounded-full bg-yellow-500" /><span className="text-[10px] text-[#9E96AB]">Permesso</span></div>
       </div>
+
+      {/* Vista settimana selezionata */}
+      {settimanaSelezionata && (
+        <Card className="mt-4">
+          <p className="text-[11px] font-bold text-[#9E96AB] uppercase tracking-wider mb-3">
+            Settimana del {formatData(selectedDay)}
+          </p>
+          {settimanaSelezionata.map(g => (
+            <div key={g.data} className={`flex items-center justify-between py-3 border-b border-[#EEECF4] last:border-0 ${
+              g.data === selectedDay ? 'bg-[var(--accent)]/[0.06] -mx-3 px-3 rounded-lg' : ''
+            }`}>
+              <div className="flex items-center gap-3">
+                <div className="w-10 text-center">
+                  <div className="text-[10px] font-bold text-[#9E96AB] uppercase">{g.giorno}</div>
+                  <div className="text-[14px] font-bold text-[#1A1523]">{formatData(g.data).slice(0,5)}</div>
+                </div>
+                {g.assenza ? (
+                  <span className={`text-[12px] font-bold text-white px-2.5 py-1 rounded-lg ${ASSENZA_COLORI[g.assenza.tipo] || 'bg-gray-400'}`}>
+                    {ASSENZA_LABEL[g.assenza.tipo] || 'Assenza'}
+                  </span>
+                ) : g.turno ? (
+                  <span className={`text-[12px] font-bold text-white px-2.5 py-1 rounded-lg ${TURNO_COLORI[g.turno.tipo] || 'bg-gray-400'}`}>
+                    {g.turno.tipo === 'riposo' ? 'Riposo' : `${g.turno.ora_inizio?.slice(0,5)}–${g.turno.ora_fine?.slice(0,5)}`}
+                  </span>
+                ) : (
+                  <span className="text-[12px] text-[#D4D0DC]">—</span>
+                )}
+              </div>
+              {g.turno && g.turno.tipo !== 'riposo' && (
+                <span className="text-[10px] font-bold text-[#9E96AB] uppercase">{g.turno.tipo}</span>
+              )}
+            </div>
+          ))}
+        </Card>
+      )}
 
       {/* Lista turni del mese */}
       {turni.length > 0 && (

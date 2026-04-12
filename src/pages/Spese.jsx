@@ -4,7 +4,8 @@ import Layout from '../components/Layout'
 import Card from '../components/Card'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Receipt, Plus, X } from 'lucide-react'
+import { Receipt, Plus, X, Camera } from 'lucide-react'
+import { useRef } from 'react'
 
 export default function Spese() {
   const [data, setData] = useState(null)
@@ -15,6 +16,8 @@ export default function Spese() {
   const [descrizione, setDescrizione] = useState('')
   const [sending, setSending] = useState(false)
   const [msg, setMsg] = useState(null)
+  const [scanning, setScanning] = useState(false)
+  const fileRef = useRef(null)
 
   const load = () => getSpese().then(setData).catch(() => {}).finally(() => setLoading(false))
   useEffect(() => { load() }, [])
@@ -31,6 +34,37 @@ export default function Spese() {
     } catch (err) {
       setMsg({ ok: false, text: err.response?.data?.errore || 'Errore' })
     } finally { setSending(false) }
+  }
+
+  const handleScan = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setScanning(true)
+    setMsg(null)
+    try {
+      const Tesseract = await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js')
+      const result = await Tesseract.default.recognize(file, 'ita')
+      const text = result.data.text || ''
+      const match = text.match(/(?:totale|total|eur|€|importo|da pagare)\s*:?\s*[€]?\s*(\d+[.,]\d{2})/i)
+      if (match) {
+        setImporto(match[1].replace(',', '.'))
+        setMsg({ ok: true, text: `Importo rilevato: € ${match[1]}` })
+      } else {
+        const amounts = text.match(/\d+[.,]\d{2}/g)
+        if (amounts && amounts.length > 0) {
+          const last = amounts[amounts.length - 1].replace(',', '.')
+          setImporto(last)
+          setMsg({ ok: true, text: `Possibile importo: € ${last} — verifica` })
+        } else {
+          setMsg({ ok: false, text: 'Importo non rilevato — inserisci manualmente' })
+        }
+      }
+    } catch {
+      setMsg({ ok: false, text: 'Errore scansione — inserisci manualmente' })
+    } finally {
+      setScanning(false)
+      if (fileRef.current) fileRef.current.value = ''
+    }
   }
 
   if (loading) return <Layout><LoadingSpinner /></Layout>
@@ -88,12 +122,19 @@ export default function Spese() {
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white w-full max-w-lg rounded-t-[24px] p-6">
+              className="bg-white w-full max-w-lg rounded-t-[24px] p-6"
+              style={{ paddingBottom: 'max(24px, env(safe-area-inset-bottom))' }}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-bold">Nuova spesa</h2>
                 <button onClick={() => setShowModal(false)} className="text-[#9E96AB]"><X size={22} /></button>
               </div>
               <form onSubmit={handleSubmit}>
+                <input type="file" ref={fileRef} accept="image/*" capture="environment" className="hidden" onChange={handleScan} />
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={scanning}
+                  className="w-full h-12 bg-[#F8F7FA] border-[1.5px] border-dashed border-[#EEECF4] rounded-xl text-[14px] font-semibold text-[#6B6478] flex items-center justify-center gap-2 mb-4 active:scale-[0.98] transition-transform disabled:opacity-50">
+                  {scanning ? <div className="w-4 h-4 border-2 border-[#9E96AB]/30 border-t-[#9E96AB] rounded-full animate-spin" /> : <Camera size={18} />}
+                  {scanning ? 'Analisi in corso...' : '📷 Scansiona scontrino'}
+                </button>
                 <div className="mb-4">
                   <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Importo (€) *</label>
                   <input type="number" step="0.01" value={importo} onChange={e => setImporto(e.target.value)}
@@ -120,8 +161,8 @@ export default function Spese() {
                     placeholder="Es. Pranzo cliente"
                     className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none" />
                 </div>
-                {msg && !msg.ok && (
-                  <div className="bg-red-50 text-red-600 text-sm font-semibold px-4 py-3 rounded-xl mb-4">{msg.text}</div>
+                {msg && (
+                  <div className={`text-sm font-semibold px-4 py-3 rounded-xl mb-4 ${msg.ok ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-600'}`}>{msg.text}</div>
                 )}
                 <motion.button type="submit" disabled={sending} whileTap={{ scale: 0.97 }}
                   className="w-full h-[52px] bg-[var(--accent)] text-white rounded-[14px] font-bold text-[15px] flex items-center justify-center gap-2 disabled:opacity-50">
