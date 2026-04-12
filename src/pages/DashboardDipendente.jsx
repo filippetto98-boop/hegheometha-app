@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react'
-import { getDashboard, timbra } from '../api/hr'
+import { getDashboard, timbra, getSpese } from '../api/hr'
 import { getStoredUser, logout } from '../api/auth'
 import Layout from '../components/Layout'
 import Card from '../components/Card'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { motion } from 'framer-motion'
-import { LogIn as LogInIcon, LogOut, Calendar, Clock, Palmtree, ChevronRight } from 'lucide-react'
+import { LogIn as LogInIcon, LogOut, Calendar, Clock, Palmtree, Receipt, ChevronRight } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
 
 const GIORNI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab']
 const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic']
@@ -27,13 +28,18 @@ const TURNO_COLORI = {
 
 export default function DashboardDipendente() {
   const [data, setData] = useState(null)
+  const [speseTotale, setSpeseTotale] = useState(null)
   const [loading, setLoading] = useState(true)
   const [timbLoading, setTimbLoading] = useState(false)
   const [msg, setMsg] = useState(null)
   const [ora, setOra] = useState(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }))
   const user = getStoredUser()
+  const navigate = useNavigate()
 
-  const load = () => getDashboard().then(setData).catch(() => {}).finally(() => setLoading(false))
+  const load = () => {
+    getDashboard().then(setData).catch(() => {}).finally(() => setLoading(false))
+    getSpese().then(d => setSpeseTotale(d.totale_mese)).catch(() => {})
+  }
   useEffect(() => { load() }, [])
   useEffect(() => {
     const t = setInterval(() => setOra(new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })), 1000)
@@ -182,6 +188,24 @@ export default function DashboardDipendente() {
           ))}
         </Card>
       )}
+
+      {/* Note Spese */}
+      <Card className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Receipt size={16} className="text-[var(--accent)]" />
+            <span className="text-[11px] font-bold text-[#9E96AB] uppercase tracking-wider">Spese</span>
+          </div>
+          <button onClick={() => navigate('/spese')}
+            className="text-xs font-bold text-[var(--accent)] flex items-center gap-1">
+            Vedi tutte <ChevronRight size={14} />
+          </button>
+        </div>
+        <div className="text-[28px] font-extrabold text-[#1A1523] tracking-tight">
+          € {speseTotale != null ? speseTotale.toFixed(2) : '0.00'}
+        </div>
+        <p className="text-xs text-[#9E96AB] mt-0.5">Totale mese corrente</p>
+      </Card>
     </Layout>
   )
 }
