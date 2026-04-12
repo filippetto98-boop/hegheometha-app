@@ -1,10 +1,11 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { getDashboard, richiediAssenza } from '../api/hr'
 import Layout from '../components/Layout'
 import Card from '../components/Card'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { motion } from 'framer-motion'
-import { Palmtree, Send, Calendar } from 'lucide-react'
+import { Send } from 'lucide-react'
+import CalendarioRange from '../components/CalendarioRange'
 
 const GIORNI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab']
 const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic']
@@ -34,18 +35,10 @@ export default function Ferie() {
   const [note, setNote] = useState('')
   const [sending, setSending] = useState(false)
   const [msg, setMsg] = useState(null)
-  const fineRef = useRef(null)
 
   useEffect(() => {
     getDashboard().then(d => setRichieste(d.richieste_assenza || [])).catch(() => {}).finally(() => setLoading(false))
   }, [])
-
-  const handleInizioChange = (e) => {
-    setDataInizio(e.target.value)
-    if (e.target.value && fineRef.current) {
-      setTimeout(() => fineRef.current.focus(), 100)
-    }
-  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -88,27 +81,11 @@ export default function Ferie() {
               <option value="altro">Altro</option>
             </select>
           </div>
-          <div className="w-full overflow-hidden mb-2">
-            <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Dal</label>
-            <input type="date" value={dataInizio} onChange={handleInizioChange}
-              style={{ maxWidth: '100%', paddingLeft: '16px', paddingRight: '16px', boxSizing: 'border-box' }}
-              className="w-full py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none appearance-none" required />
-          </div>
-          {dataInizio && (
-            <div className="flex items-center justify-center my-1">
-              <div className="h-0.5 flex-1 rounded-full" style={{background:'var(--accent)', opacity: dataFine ? 1 : 0.3}} />
-              <span className="mx-2 text-xs font-bold" style={{color:'var(--accent)'}}>
-                {dataFine ? `${giorni} giorni` : '→'}
-              </span>
-              <div className="h-0.5 flex-1 rounded-full" style={{background:'var(--accent)', opacity: dataFine ? 1 : 0.3}} />
-            </div>
-          )}
-          <div className="w-full overflow-hidden mb-4">
-            <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Al</label>
-            <input type="date" ref={fineRef} value={dataFine} onChange={e => setDataFine(e.target.value)}
-              style={{ maxWidth: '100%', paddingLeft: '16px', paddingRight: '16px', boxSizing: 'border-box' }}
-              className="w-full py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none appearance-none" required />
-          </div>
+          <CalendarioRange
+            dataInizio={dataInizio}
+            dataFine={dataFine}
+            onChange={(inizio, fine) => { setDataInizio(inizio); setDataFine(fine) }}
+          />
           {dataInizio && dataFine && giorni > 0 && (
             <div className="mb-4 text-center">
               <div className="text-[15px] font-semibold text-[#1A1523]">
