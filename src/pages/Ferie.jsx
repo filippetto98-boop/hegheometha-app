@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { getDashboard, richiediAssenza } from '../api/hr'
 import Layout from '../components/Layout'
 import Card from '../components/Card'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { motion } from 'framer-motion'
-import { Palmtree, Send } from 'lucide-react'
+import { Palmtree, Send, Calendar } from 'lucide-react'
 
 const GIORNI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab']
 const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic']
@@ -14,19 +14,32 @@ function formattaData(dateStr) {
   return `${GIORNI[d.getDay()]} ${d.getDate()} ${MESI[d.getMonth()]} ${d.getFullYear()}`
 }
 
+function calcolaGiorni(inizio, fine) {
+  if (!inizio || !fine) return 0
+  return Math.ceil((new Date(fine) - new Date(inizio)) / (1000 * 60 * 60 * 24)) + 1
+}
+
 export default function Ferie() {
   const [richieste, setRichieste] = useState([])
   const [loading, setLoading] = useState(true)
-  const [tipo, setTipo] = useState('ferie')
+  const [tipo, setTipo] = useState('permesso')
   const [dataInizio, setDataInizio] = useState('')
   const [dataFine, setDataFine] = useState('')
   const [note, setNote] = useState('')
   const [sending, setSending] = useState(false)
   const [msg, setMsg] = useState(null)
+  const fineRef = useRef(null)
 
   useEffect(() => {
     getDashboard().then(d => setRichieste(d.richieste_assenza || [])).catch(() => {}).finally(() => setLoading(false))
   }, [])
+
+  const handleInizioChange = (e) => {
+    setDataInizio(e.target.value)
+    if (e.target.value && fineRef.current) {
+      setTimeout(() => fineRef.current.focus(), 100)
+    }
+  }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -45,6 +58,8 @@ export default function Ferie() {
 
   if (loading) return <Layout><LoadingSpinner /></Layout>
 
+  const giorni = calcolaGiorni(dataInizio, dataFine)
+
   const STATI_COLORI = {
     in_attesa: 'bg-amber-50 text-amber-700',
     approvata: 'bg-emerald-50 text-emerald-700',
@@ -53,7 +68,7 @@ export default function Ferie() {
 
   return (
     <Layout>
-      <h1 className="text-xl font-bold text-[#1A1523] tracking-tight mb-5">🏖️ Ferie e permessi</h1>
+      <h1 className="text-xl font-bold text-[#1A1523] tracking-tight mb-5">📅 Permessi</h1>
 
       <Card className="mb-5">
         <form onSubmit={handleSubmit}>
@@ -61,22 +76,30 @@ export default function Ferie() {
             <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Tipo</label>
             <select value={tipo} onChange={e => setTipo(e.target.value)}
               className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none">
-              <option value="ferie">Ferie</option>
               <option value="permesso">Permesso</option>
+              <option value="ferie">Ferie</option>
               <option value="malattia">Malattia</option>
               <option value="altro">Altro</option>
             </select>
           </div>
-          <div className="mb-4">
+          <div className="w-full overflow-hidden mb-4">
             <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Dal</label>
-            <input type="date" value={dataInizio} onChange={e => setDataInizio(e.target.value)}
+            <input type="date" value={dataInizio} onChange={handleInizioChange}
+              style={{ maxWidth: '100%' }}
               className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none" required />
           </div>
-          <div className="mb-4">
+          <div className="w-full overflow-hidden mb-4">
             <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Al</label>
-            <input type="date" value={dataFine} onChange={e => setDataFine(e.target.value)}
+            <input type="date" ref={fineRef} value={dataFine} onChange={e => setDataFine(e.target.value)}
+              style={{ maxWidth: '100%' }}
               className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none" required />
           </div>
+          {dataInizio && dataFine && giorni > 0 && (
+            <div className="flex items-center gap-2 bg-emerald-50 text-emerald-700 text-sm font-semibold px-4 py-3 rounded-xl mb-4">
+              <Calendar size={16} />
+              <span>Dal {formattaData(dataInizio)} al {formattaData(dataFine)} — {giorni} giorn{giorni === 1 ? 'o' : 'i'}</span>
+            </div>
+          )}
           <div className="mb-4">
             <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Note</label>
             <textarea value={note} onChange={e => setNote(e.target.value)} rows={2}
@@ -89,7 +112,8 @@ export default function Ferie() {
             </div>
           )}
           <motion.button type="submit" disabled={sending} whileTap={{ scale: 0.97 }}
-            className="w-full h-[52px] bg-[var(--accent)] text-white rounded-[14px] font-bold text-[15px] flex items-center justify-center gap-2 disabled:opacity-50">
+            className="w-full h-[52px] bg-[var(--accent)] text-white rounded-[14px] font-bold text-[15px] flex items-center justify-center gap-2 disabled:opacity-50"
+            style={{ boxShadow: '0 4px 16px color-mix(in srgb, var(--accent), transparent 70%)' }}>
             {sending ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <><Send size={18} /> Invia richiesta</>}
           </motion.button>
         </form>

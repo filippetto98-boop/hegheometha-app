@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Palmtree, Receipt, Bell, Package } from 'lucide-react'
+import { Home, Calendar, Receipt, Bell, Package } from 'lucide-react'
 import { getStoredUser } from '../api/auth'
 
 export default function BottomNav() {
@@ -16,14 +16,14 @@ export default function BottomNav() {
     : hasMagazzino
     ? [
         { to: '/dashboard', icon: Home, label: 'Home' },
-        { to: '/ferie', icon: Palmtree, label: 'Ferie' },
+        { to: '/ferie', icon: Calendar, label: 'Permessi' },
         { to: '/spese', icon: Receipt, label: 'Spese' },
         { to: '/magazzino', icon: Package, label: 'Magazzino' },
         { to: '/notifiche', icon: Bell, label: 'Notifiche' },
       ]
     : [
         { to: '/dashboard', icon: Home, label: 'Home' },
-        { to: '/ferie', icon: Palmtree, label: 'Ferie' },
+        { to: '/ferie', icon: Calendar, label: 'Permessi' },
         { to: '/spese', icon: Receipt, label: 'Spese' },
         { to: '/notifiche', icon: Bell, label: 'Notifiche' },
       ]

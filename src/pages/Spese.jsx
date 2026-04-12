@@ -52,7 +52,7 @@ export default function Spese() {
 
       <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowModal(true)}
         className="w-full h-[52px] bg-[var(--accent)] text-white rounded-[14px] font-bold text-[15px] flex items-center justify-center gap-2 mb-5"
-        style={{ boxShadow: '0 4px 16px rgba(21,101,192,0.3)' }}>
+        style={{ boxShadow: '0 4px 16px color-mix(in srgb, var(--accent), transparent 70%)' }}>
         <Plus size={20} /> Aggiungi spesa
       </motion.button>
 
