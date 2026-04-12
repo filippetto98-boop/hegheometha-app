@@ -1,5 +1,5 @@
 import { NavLink } from 'react-router-dom'
-import { Home, Package, Bell } from 'lucide-react'
+import { Home, Palmtree, Receipt, Bell, Package } from 'lucide-react'
 import { getStoredUser } from '../api/auth'
 
 export default function BottomNav() {
@@ -14,7 +14,8 @@ export default function BottomNav() {
       ]
     : [
         { to: '/dashboard', icon: Home, label: 'Home' },
-        { to: '/magazzino', icon: Package, label: 'Magazzino' },
+        { to: '/ferie', icon: Palmtree, label: 'Ferie' },
+        { to: '/spese', icon: Receipt, label: 'Spese' },
         { to: '/notifiche', icon: Bell, label: 'Notifiche' },
       ]
 
@@ -25,13 +26,13 @@ export default function BottomNav() {
         {items.map(({ to, icon: Icon, label }) => (
           <NavLink key={to} to={to}
             className={({ isActive }) =>
-              `flex flex-col items-center gap-1 px-4 py-2 text-xs font-semibold transition-colors ${
+              `flex flex-col items-center gap-0.5 px-2 py-2 text-[10px] font-semibold transition-colors ${
                 isActive ? 'text-[var(--accent)]' : 'text-[#9E96AB]'
               }`
             }>
             {({ isActive }) => (
               <>
-                <Icon size={22} strokeWidth={isActive ? 2.5 : 1.5} />
+                <Icon size={18} strokeWidth={isActive ? 2.5 : 1.5} />
                 <span>{label}</span>
               </>
             )}

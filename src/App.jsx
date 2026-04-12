@@ -5,12 +5,13 @@ import DashboardDipendente from './pages/DashboardDipendente'
 import DashboardTitolare from './pages/DashboardTitolare'
 import Magazzino from './pages/Magazzino'
 import Notifiche from './pages/Notifiche'
+import Ferie from './pages/Ferie'
+import Spese from './pages/Spese'
 
 function ProtectedRoute({ children, ruolo }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />
   if (ruolo) {
     const user = getStoredUser()
-    // Titolare può accedere a tutto
     if (user?.ruolo !== ruolo && user?.ruolo !== 'titolare') {
       return <Navigate to="/" replace />
     }
@@ -42,6 +43,12 @@ export default function App() {
         } />
         <Route path="/notifiche" element={
           <ProtectedRoute><Notifiche /></ProtectedRoute>
+        } />
+        <Route path="/ferie" element={
+          <ProtectedRoute ruolo="dipendente"><Ferie /></ProtectedRoute>
+        } />
+        <Route path="/spese" element={
+          <ProtectedRoute ruolo="dipendente"><Spese /></ProtectedRoute>
         } />
       </Routes>
     </BrowserRouter>

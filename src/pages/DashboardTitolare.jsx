@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { getTitolareDashboard } from '../api/hr'
+import { getTitolareDashboard, gestisciAssenza } from '../api/hr'
 import { getStoredUser, logout } from '../api/auth'
 import Layout from '../components/Layout'
 import Card from '../components/Card'
@@ -110,10 +110,12 @@ export default function DashboardTitolare() {
                 </div>
               </div>
               <div className="flex gap-2">
-                <button className="flex-1 h-11 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform">
+                <button onClick={async () => { await gestisciAssenza(r.id, 'approva'); setData(d => ({...d, richieste_in_attesa: d.richieste_in_attesa.filter(x => x.id !== r.id)})) }}
+                  className="flex-1 h-11 rounded-xl bg-emerald-50 text-emerald-700 font-bold text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform">
                   <Check size={16} /> Approva
                 </button>
-                <button className="flex-1 h-11 rounded-xl bg-red-50 text-red-600 font-bold text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform">
+                <button onClick={async () => { await gestisciAssenza(r.id, 'rifiuta'); setData(d => ({...d, richieste_in_attesa: d.richieste_in_attesa.filter(x => x.id !== r.id)})) }}
+                  className="flex-1 h-11 rounded-xl bg-red-50 text-red-600 font-bold text-sm flex items-center justify-center gap-1 active:scale-95 transition-transform">
                   <X size={16} /> Rifiuta
                 </button>
               </div>

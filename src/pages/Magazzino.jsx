@@ -3,12 +3,13 @@ import { getMagazzino } from '../api/magazzino'
 import Layout from '../components/Layout'
 import Card from '../components/Card'
 import LoadingSpinner from '../components/LoadingSpinner'
-import { Package, AlertTriangle, Search } from 'lucide-react'
+import { AlertTriangle, Search } from 'lucide-react'
 
 export default function Magazzino() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
+  const [catFiltro, setCatFiltro] = useState(null)
 
   useEffect(() => {
     getMagazzino().then(setData).catch(() => {}).finally(() => setLoading(false))
@@ -16,9 +17,11 @@ export default function Magazzino() {
 
   if (loading) return <Layout><LoadingSpinner /></Layout>
 
-  const prodotti = (data?.prodotti || []).filter(p =>
-    p.nome.toLowerCase().includes(search.toLowerCase())
-  )
+  const prodotti = (data?.prodotti || []).filter(p => {
+    const matchSearch = p.nome.toLowerCase().includes(search.toLowerCase())
+    const matchCat = catFiltro === null || p.categoria === catFiltro
+    return matchSearch && matchCat
+  })
 
   return (
     <Layout>
@@ -31,12 +34,33 @@ export default function Magazzino() {
         </div>
       )}
 
+      {/* Filtro categorie */}
+      <div className="flex gap-2 overflow-x-auto mb-4 scrollbar-hide" style={{ scrollbarWidth: 'none' }}>
+        <button
+          onClick={() => setCatFiltro(null)}
+          className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+            catFiltro === null
+              ? 'bg-[var(--accent)] text-white'
+              : 'bg-white text-[#6B6478] border border-[#EEECF4]'
+          }`}
+        >Tutti</button>
+        {(data?.categorie || []).map(c => (
+          <button
+            key={c.id}
+            onClick={() => setCatFiltro(c.id)}
+            className={`flex-shrink-0 px-4 py-2 rounded-full text-sm font-semibold transition-all ${
+              catFiltro === c.id
+                ? 'bg-[var(--accent)] text-white'
+                : 'bg-white text-[#6B6478] border border-[#EEECF4]'
+            }`}
+          >{c.nome}</button>
+        ))}
+      </div>
+
       <div className="relative mb-4">
         <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-[#9E96AB]" />
         <input
-          type="text"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          type="text" value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Cerca prodotto..."
           className="w-full pl-11 pr-4 py-3.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none transition-all"
         />
@@ -46,8 +70,11 @@ export default function Magazzino() {
         {prodotti.map(p => (
           <Card key={p.id} className="!p-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-xl bg-[#F8F7FA] flex items-center justify-center text-xl flex-shrink-0">
-                {p.foto ? <img src={`${import.meta.env.VITE_API_URL}${p.foto}`} className="w-full h-full object-cover rounded-xl" onError={(e) => { e.target.style.display='none'; e.target.parentElement.textContent='📦' }} /> : '📦'}
+              <div className="w-12 h-12 rounded-xl bg-[#F8F7FA] flex items-center justify-center text-xl flex-shrink-0 overflow-hidden">
+                {p.foto ? (
+                  <img src={`${import.meta.env.VITE_API_URL}${p.foto}`} className="w-full h-full object-cover rounded-xl"
+                    onError={(e) => { e.target.style.display='none'; e.target.parentElement.textContent='📦' }} />
+                ) : '📦'}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-[15px] font-semibold text-[#1A1523] truncate">{p.nome}</div>
