@@ -122,8 +122,9 @@ export default function Spese() {
             <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }}
               transition={{ type: 'spring', damping: 25, stiffness: 300 }}
               onClick={e => e.stopPropagation()}
-              className="bg-white w-full max-w-lg rounded-t-[24px] px-6 pt-6 pb-10"
-              style={{ paddingBottom: 'calc(40px + env(safe-area-inset-bottom))' }}>
+              className="bg-white w-full max-w-lg rounded-t-[24px] flex flex-col"
+              style={{ maxHeight: '90vh' }}>
+              <div className="overflow-y-auto px-6 pt-6" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 24px)' }}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-bold">Nuova spesa</h2>
                 <button onClick={() => setShowModal(false)} className="text-[#9E96AB]"><X size={22} /></button>
@@ -169,6 +170,7 @@ export default function Spese() {
                   {sending ? <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : 'Salva spesa'}
                 </motion.button>
               </form>
+              </div>
             </motion.div>
           </motion.div>
         )}
