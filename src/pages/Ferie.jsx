@@ -6,6 +6,14 @@ import LoadingSpinner from '../components/LoadingSpinner'
 import { motion } from 'framer-motion'
 import { Palmtree, Send } from 'lucide-react'
 
+const GIORNI = ['Dom','Lun','Mar','Mer','Gio','Ven','Sab']
+const MESI = ['Gen','Feb','Mar','Apr','Mag','Giu','Lug','Ago','Set','Ott','Nov','Dic']
+function formattaData(dateStr) {
+  if (!dateStr) return ''
+  const d = new Date(dateStr + 'T00:00:00')
+  return `${GIORNI[d.getDay()]} ${d.getDate()} ${MESI[d.getMonth()]} ${d.getFullYear()}`
+}
+
 export default function Ferie() {
   const [richieste, setRichieste] = useState([])
   const [loading, setLoading] = useState(true)
@@ -59,17 +67,15 @@ export default function Ferie() {
               <option value="altro">Altro</option>
             </select>
           </div>
-          <div className="grid grid-cols-2 gap-3 mb-4">
-            <div>
-              <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Dal</label>
-              <input type="date" value={dataInizio} onChange={e => setDataInizio(e.target.value)}
-                className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none" required />
-            </div>
-            <div>
-              <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Al</label>
-              <input type="date" value={dataFine} onChange={e => setDataFine(e.target.value)}
-                className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none" required />
-            </div>
+          <div className="mb-4">
+            <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Dal</label>
+            <input type="date" value={dataInizio} onChange={e => setDataInizio(e.target.value)}
+              className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none" required />
+          </div>
+          <div className="mb-4">
+            <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Al</label>
+            <input type="date" value={dataFine} onChange={e => setDataFine(e.target.value)}
+              className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none" required />
           </div>
           <div className="mb-4">
             <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Note</label>
@@ -96,7 +102,7 @@ export default function Ferie() {
             <div key={r.id} className="flex items-center justify-between py-3 border-b border-[#EEECF4] last:border-0">
               <div>
                 <span className="text-sm font-semibold text-[#1A1523]">{r.tipo_display}</span>
-                <p className="text-xs text-[#9E96AB] mt-0.5">{r.data_inizio} → {r.data_fine}</p>
+                <p className="text-xs text-[#9E96AB] mt-0.5">{formattaData(r.data_inizio)} → {formattaData(r.data_fine)}</p>
               </div>
               <span className={`text-xs font-bold px-2.5 py-1 rounded-lg ${STATI_COLORI[r.stato] || 'bg-gray-100 text-gray-600'}`}>
                 {r.stato}
