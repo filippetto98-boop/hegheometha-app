@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+:root {
+  --accent: #1565C0;
+  --success: #1D9E75;
+  --warning: #F59E0B;
+  --danger: #EF4444;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background: #F8F7FA;
+  color: #1A1523;
+  margin: 0;
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+}
+
+.pb-safe {
+  padding-bottom: max(80px, calc(70px + env(safe-area-inset-bottom)));
+}
