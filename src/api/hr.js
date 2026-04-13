@@ -8,3 +8,6 @@ export const gestisciAssenza = (id, azione, note = '') => api.post(`/api/hr/asse
 export const getSpese = () => api.get('/api/hr/spese/').then(r => r.data)
 export const aggiungiSpesaRapida = (data) => api.post('/api/hr/spesa-rapida/', data).then(r => r.data)
 export const getTurniMese = (mese) => api.get(`/api/hr/turni/?mese=${mese}`).then(r => r.data)
+export const inviaNotaSpese = (id) => api.post(`/api/hr/spese/${id}/invia/`).then(r => r.data)
+export const gestisciNotaSpese = (id, azione, note = '') => api.post(`/api/hr/spese/${id}/gestisci/`, { azione, note }).then(r => r.data)
+export const getNoteSpeseTitolare = () => api.get('/api/hr/spese/titolare/').then(r => r.data)
