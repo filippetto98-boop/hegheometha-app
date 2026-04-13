@@ -281,16 +281,40 @@ export default function Spese() {
         </div>
       )}
 
-      {noteList.length > 0 ? (
-        <div className="space-y-3">
-          {noteList.map(n => renderNota(n, tab === 'team'))}
-        </div>
-      ) : (
-        <div className="text-center py-12">
-          <Receipt size={40} className="mx-auto mb-3 text-[#EEECF4]" />
-          <p className="text-[#9E96AB]">{tab === 'team' ? 'Nessuna nota spese inviata' : 'Nessuna nota spese'}</p>
-        </div>
-      )}
+      {(() => {
+        const noteBozza = noteList.filter(n => n.stato === 'bozza')
+        const noteProcessate = noteList.filter(n => n.stato !== 'bozza')
+        return (
+          <>
+            {noteProcessate.length > 0 && (
+              <div className="space-y-3 mb-2">
+                {noteProcessate.map(n => renderNota(n, tab === 'team'))}
+              </div>
+            )}
+
+            {noteProcessate.length > 0 && noteBozza.length > 0 && (
+              <div className="flex items-center gap-3 my-3">
+                <div className="flex-1 h-px bg-[#EEECF4]" />
+                <span className="text-[11px] font-bold text-[#9E96AB] uppercase tracking-wider">Da inviare</span>
+                <div className="flex-1 h-px bg-[#EEECF4]" />
+              </div>
+            )}
+
+            {noteBozza.length > 0 && (
+              <div className="space-y-3">
+                {noteBozza.map(n => renderNota(n, tab === 'team'))}
+              </div>
+            )}
+
+            {noteList.length === 0 && (
+              <div className="text-center py-12">
+                <Receipt size={40} className="mx-auto mb-3 text-[#EEECF4]" />
+                <p className="text-[#9E96AB]">{tab === 'team' ? 'Nessuna nota spese inviata' : 'Nessuna nota spese'}</p>
+              </div>
+            )}
+          </>
+        )
+      })()}
 
       {/* Modal aggiungi spesa */}
       <AnimatePresence>
