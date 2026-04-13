@@ -148,6 +148,7 @@ export default function Spese() {
                 {isTitolareView && n.dipendente_nome ? `${n.dipendente_nome} — ` : ''}{n.nome_mese} {n.anno}
               </div>
               <div className="text-xs text-[#9E96AB] mt-0.5">{n.spese_count || n.spese?.length || 0} spese</div>
+              {n.created_at && <div className="text-[11px] text-[#9E96AB]">Creata il {n.created_at}</div>}
             </div>
             <div className="text-right flex items-center gap-2">
               <div>
