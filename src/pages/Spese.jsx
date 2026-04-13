@@ -28,10 +28,11 @@ export default function Spese() {
     if (!importo) { setMsg({ ok: false, text: 'Inserisci importo' }); return }
     setSending(true); setMsg(null)
     try {
-      await aggiungiSpesaRapida({ importo, categoria, descrizione: descrizione || 'Spesa rapida' })
+      const importoNorm = String(importo).replace(',', '.')
+      await aggiungiSpesaRapida({ importo: importoNorm, categoria, descrizione: descrizione || 'Spesa rapida' })
       setMsg({ ok: true, text: 'Spesa aggiunta!' })
       setImporto(''); setDescrizione(''); setShowModal(false)
-      load()
+      setTimeout(() => load(), 500)
     } catch (err) {
       const detail = err.response?.data?.errore
         || err.response?.data?.detail
@@ -145,7 +146,7 @@ export default function Spese() {
                 </button>
                 <div className="mb-4">
                   <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Importo (€) *</label>
-                  <input type="number" step="0.01" value={importo} onChange={e => setImporto(e.target.value)}
+                  <input type="number" step="0.01" value={importo} onChange={e => setImporto(e.target.value.replace(',', '.'))}
                     placeholder="25.50"
                     className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[16px] font-bold focus:border-[var(--accent)] outline-none" required />
                 </div>
