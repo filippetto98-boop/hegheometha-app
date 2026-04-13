@@ -249,7 +249,10 @@ export default function Spese() {
     <Layout>
       <div className="flex items-center justify-between mb-5">
         <h1 className="text-xl font-bold text-[#1A1523] tracking-tight">Note spese</h1>
-        <span className="text-lg font-bold text-[var(--accent)]">€ {data?.totale_mese?.toFixed(2) || '0.00'}</span>
+        <div className="text-right">
+          <div className="text-lg font-bold text-[var(--accent)]">€ {data?.totale_mese?.toFixed(2) || '0.00'}</div>
+          <div className="text-[10px] font-semibold text-[#9E96AB] uppercase tracking-wide">Totale mese</div>
+        </div>
       </div>
 
       {msg && (
