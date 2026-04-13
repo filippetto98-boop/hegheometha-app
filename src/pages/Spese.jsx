@@ -17,17 +17,8 @@ export default function Spese() {
   const [sending, setSending] = useState(false)
   const [msg, setMsg] = useState(null)
   const [scanning, setScanning] = useState(false)
-  const [safeBottom, setSafeBottom] = useState(34)
+  const safeBottom = 50
   const fileRef = useRef(null)
-
-  useEffect(() => {
-    const probe = document.createElement('div')
-    probe.style.cssText = 'position:fixed;bottom:0;left:0;width:1px;height:1px;padding-bottom:env(safe-area-inset-bottom);visibility:hidden'
-    document.body.appendChild(probe)
-    const computed = parseInt(getComputedStyle(probe).paddingBottom) || 0
-    document.body.removeChild(probe)
-    if (computed > 0) setSafeBottom(computed)
-  }, [])
 
   const load = () => getSpese().then(setData).catch(() => {}).finally(() => setLoading(false))
   useEffect(() => { load() }, [])
@@ -42,7 +33,13 @@ export default function Spese() {
       setImporto(''); setDescrizione(''); setShowModal(false)
       load()
     } catch (err) {
-      setMsg({ ok: false, text: err.response?.data?.errore || 'Errore' })
+      const detail = err.response?.data?.errore
+        || err.response?.data?.detail
+        || err.response?.data?.non_field_errors?.[0]
+        || (err.response?.status ? `HTTP ${err.response.status}` : null)
+        || err.message
+        || 'Errore sconosciuto'
+      setMsg({ ok: false, text: detail })
     } finally { setSending(false) }
   }
 
@@ -134,7 +131,7 @@ export default function Spese() {
               onClick={e => e.stopPropagation()}
               className="bg-white w-full max-w-lg rounded-t-[24px] flex flex-col"
               style={{ maxHeight: '90vh' }}>
-              <div className="overflow-y-auto px-6 pt-6" style={{ paddingBottom: `${safeBottom + 24}px` }}>
+              <div className="overflow-y-auto px-6 pt-6" style={{ paddingBottom: `${safeBottom + 16}px` }}>
               <div className="flex items-center justify-between mb-5">
                 <h2 className="text-lg font-bold">Nuova spesa</h2>
                 <button onClick={() => setShowModal(false)} className="text-[#9E96AB]"><X size={22} /></button>
