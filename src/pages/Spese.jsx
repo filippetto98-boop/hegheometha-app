@@ -285,11 +285,55 @@ export default function Spese() {
       {(() => {
         const noteBozza = noteList.filter(n => n.stato === 'bozza')
         const noteProcessate = noteList.filter(n => n.stato !== 'bozza')
+
+        // Raggruppa per mese/anno
+        const mesiMap = {}
+        noteProcessate.forEach(n => {
+          const key = `${n.anno}-${String(n.mese).padStart(2,'0')}`
+          if (!mesiMap[key]) mesiMap[key] = {
+            label: `${n.nome_mese} ${n.anno}`,
+            key,
+            note: [],
+            totale: 0
+          }
+          mesiMap[key].note.push(n)
+          mesiMap[key].totale += Number(n.totale)
+        })
+        const mesiOrdinati = Object.values(mesiMap).sort((a,b) => b.key.localeCompare(a.key))
+
         return (
           <>
-            {noteProcessate.length > 0 && (
+            {mesiOrdinati.length > 0 && (
               <div className="space-y-3 mb-2">
-                {noteProcessate.map(n => renderNota(n, tab === 'team'))}
+                {mesiOrdinati.map(mese => (
+                  <div key={mese.key} className="mb-2">
+                    <button
+                      onClick={() => setOpenNota(openNota === mese.key ? null : mese.key)}
+                      className="w-full flex items-center justify-between px-4 py-3 bg-[#F8F7FA] rounded-xl mb-2">
+                      <div className="flex items-center gap-2">
+                        <motion.div animate={{ rotate: openNota === mese.key ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                          <ChevronDown size={16} className="text-[#9E96AB]" />
+                        </motion.div>
+                        <span className="text-[14px] font-bold text-[#1A1523]">{mese.label}</span>
+                        <span className="text-[11px] text-[#9E96AB]">{mese.note.length} note</span>
+                      </div>
+                      <span className="text-[14px] font-bold text-[var(--accent)]">€ {mese.totale.toFixed(2)}</span>
+                    </button>
+                    <AnimatePresence initial={false}>
+                      {openNota === mese.key && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: 'auto', opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.25 }}
+                          className="overflow-hidden space-y-2 pl-2"
+                        >
+                          {mese.note.map(n => renderNota(n, tab === 'team'))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                ))}
               </div>
             )}
 
