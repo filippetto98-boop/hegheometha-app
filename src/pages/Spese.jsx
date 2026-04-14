@@ -132,13 +132,16 @@ export default function Spese() {
         if (d.importo) setImporto(String(d.importo))
         setCampiExtra(d)
         if (categoria === 'carburante' && d.tipo_carburante) {
-          setDescrizione(`${d.tipo_carburante} - ${d.litri || ''}L @ ${d.prezzo_al_litro || ''}€/L - ${d.stazione || ''}`.trim())
+          const litri = d.litri ? `${d.litri}L` : ''
+          const prezzo = d.prezzo_al_litro ? `a ${d.prezzo_al_litro}€/L` : ''
+          const luogo = [d.stazione, d.indirizzo, d.citta].filter(Boolean).join(' - ')
+          setDescrizione(`Carburante: ${[d.tipo_carburante, litri, prezzo, luogo ? `- ${luogo}` : ''].filter(Boolean).join(' ')}`)
         } else if ((categoria === 'pranzo' || categoria === 'cena') && d.esercente) {
-          setDescrizione(d.esercente)
+          const luogo = [d.indirizzo, d.citta].filter(Boolean).join(', ')
+          const tipo = categoria === 'pranzo' ? 'Pranzo' : 'Cena'
+          setDescrizione(`${tipo}: ${d.esercente}${luogo ? ` - ${luogo}` : ''}`)
         } else if (categoria === 'alloggio' && d.hotel) {
           setDescrizione(`${d.hotel} - ${d.notti || ''} notti`)
-        } else if (d.descrizione) {
-          setDescrizione(d.descrizione)
         }
         setMsg({ ok: true, text: 'Scontrino letto — verifica i dati' })
       }
