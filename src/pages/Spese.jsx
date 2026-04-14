@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getSpese, aggiungiSpesaRapida, inviaNotaSpese, gestisciNotaSpese, getNoteSpeseTitolare } from '../api/hr'
+import { getSpese, aggiungiSpesaRapida, inviaNotaSpese, gestisciNotaSpese, getNoteSpeseTitolare, scanScontrino } from '../api/hr'
 import Layout from '../components/Layout'
 import Card from '../components/Card'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -43,6 +43,7 @@ export default function Spese() {
   const [actionLoading, setActionLoading] = useState(null)
   const [motivazione, setMotivazione] = useState('')
   const [tab, setTab] = useState('mie')
+  const [campiExtra, setCampiExtra] = useState({})
   const safeBottom = 50
   const fileRef = useRef(null)
 
@@ -56,15 +57,45 @@ export default function Spese() {
   }
   useEffect(() => { load() }, [])
 
+  const handleCategoriaChange = (nuovaCategoria) => {
+    setCategoria(nuovaCategoria)
+    setCampiExtra({})
+    setImporto('')
+    setDescrizione('')
+  }
+
   const handleSubmit = async (e) => {
     e.preventDefault()
     if (!importo) { setMsg({ ok: false, text: 'Inserisci importo' }); return }
     setSending(true); setMsg(null)
     try {
       const importoNorm = String(importo).replace(',', '.')
-      await aggiungiSpesaRapida({ importo: importoNorm, categoria, descrizione: descrizione || 'Spesa rapida' })
+      let descFinale = descrizione || 'Spesa rapida'
+      if (categoria === 'carburante' && campiExtra.tipo_carburante) {
+        const parti = [campiExtra.tipo_carburante]
+        if (campiExtra.litri) parti.push(`${campiExtra.litri}L`)
+        if (campiExtra.prezzo_al_litro) parti.push(`@ ${campiExtra.prezzo_al_litro}€/L`)
+        if (campiExtra.stazione) parti.push(`- ${campiExtra.stazione}`)
+        descFinale = parti.join(' ')
+      } else if ((categoria === 'pranzo' || categoria === 'cena') && campiExtra.esercente) {
+        const parti = [campiExtra.esercente]
+        if (campiExtra.persone) parti.push(`${campiExtra.persone} persone`)
+        descFinale = parti.join(' - ')
+      } else if (categoria === 'alloggio' && campiExtra.hotel) {
+        const parti = [campiExtra.hotel]
+        if (campiExtra.notti) parti.push(`${campiExtra.notti} notti`)
+        if (campiExtra.check_in && campiExtra.check_out) parti.push(`${campiExtra.check_in} → ${campiExtra.check_out}`)
+        descFinale = parti.join(' - ')
+      } else if (categoria === 'pedaggi' && campiExtra.da) {
+        descFinale = `Autostrada ${campiExtra.da} → ${campiExtra.a || ''}`
+      } else if (categoria === 'trasporto' && campiExtra.tipo) {
+        const parti = [campiExtra.tipo]
+        if (campiExtra.da) parti.push(`${campiExtra.da} → ${campiExtra.a || ''}`)
+        descFinale = parti.join(' ')
+      }
+      await aggiungiSpesaRapida({ importo: importoNorm, categoria, descrizione: descFinale })
       setMsg({ ok: true, text: 'Spesa aggiunta!' })
-      setImporto(''); setDescrizione(''); setShowModal(false)
+      setImporto(''); setDescrizione(''); setCampiExtra({}); setShowModal(false)
       setTimeout(() => load(), 500)
     } catch (err) {
       const detail = err.response?.data?.errore
@@ -83,22 +114,24 @@ export default function Spese() {
     setScanning(true)
     setMsg(null)
     try {
-      const Tesseract = await import('https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.esm.min.js')
-      const result = await Tesseract.default.recognize(file, 'ita')
-      const text = result.data.text || ''
-      const match = text.match(/(?:totale|total|eur|€|importo|da pagare)\s*:?\s*[€]?\s*(\d+[.,]\d{2})/i)
-      if (match) {
-        setImporto(match[1].replace(',', '.'))
-        setMsg({ ok: true, text: `Importo rilevato: € ${match[1]}` })
-      } else {
-        const amounts = text.match(/\d+[.,]\d{2}/g)
-        if (amounts && amounts.length > 0) {
-          const last = amounts[amounts.length - 1].replace(',', '.')
-          setImporto(last)
-          setMsg({ ok: true, text: `Possibile importo: € ${last} — verifica` })
-        } else {
-          setMsg({ ok: false, text: 'Importo non rilevato — inserisci manualmente' })
+      const fd = new FormData()
+      fd.append('immagine', file)
+      fd.append('categoria', categoria)
+      const res = await scanScontrino(fd)
+      if (res.successo && res.dati) {
+        const d = res.dati
+        if (d.importo) setImporto(String(d.importo))
+        setCampiExtra(d)
+        if (categoria === 'carburante' && d.tipo_carburante) {
+          setDescrizione(`${d.tipo_carburante} - ${d.litri || ''}L @ ${d.prezzo_al_litro || ''}€/L - ${d.stazione || ''}`.trim())
+        } else if ((categoria === 'pranzo' || categoria === 'cena') && d.esercente) {
+          setDescrizione(d.esercente)
+        } else if (categoria === 'alloggio' && d.hotel) {
+          setDescrizione(`${d.hotel} - ${d.notti || ''} notti`)
+        } else if (d.descrizione) {
+          setDescrizione(d.descrizione)
         }
+        setMsg({ ok: true, text: 'Scontrino letto — verifica i dati' })
       }
     } catch {
       setMsg({ ok: false, text: 'Errore scansione — inserisci manualmente' })
@@ -377,21 +410,9 @@ export default function Spese() {
                 <button onClick={() => setShowModal(false)} className="text-[#9E96AB]"><X size={22} /></button>
               </div>
               <form onSubmit={handleSubmit}>
-                <input type="file" ref={fileRef} accept="image/*" capture="environment" className="hidden" onChange={handleScan} />
-                <button type="button" onClick={() => fileRef.current?.click()} disabled={scanning}
-                  className="w-full h-12 bg-[#F8F7FA] border-[1.5px] border-dashed border-[#EEECF4] rounded-xl text-[14px] font-semibold text-[#6B6478] flex items-center justify-center gap-2 mb-4 active:scale-[0.98] transition-transform disabled:opacity-50">
-                  {scanning ? <div className="w-4 h-4 border-2 border-[#9E96AB]/30 border-t-[#9E96AB] rounded-full animate-spin" /> : <Camera size={18} />}
-                  {scanning ? 'Analisi in corso...' : 'Scansiona scontrino'}
-                </button>
-                <div className="mb-4">
-                  <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Importo (€) *</label>
-                  <input type="number" step="0.01" value={importo} onChange={e => setImporto(e.target.value.replace(',', '.'))}
-                    placeholder="25.50"
-                    className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[16px] font-bold focus:border-[var(--accent)] outline-none" required />
-                </div>
                 <div className="mb-4">
                   <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Categoria</label>
-                  <select value={categoria} onChange={e => setCategoria(e.target.value)}
+                  <select value={categoria} onChange={e => handleCategoriaChange(e.target.value)}
                     className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[15px] focus:border-[var(--accent)] outline-none">
                     <option value="carburante">Carburante</option>
                     <option value="pranzo">Pranzo</option>
@@ -402,6 +423,130 @@ export default function Spese() {
                     <option value="materiale">Materiale</option>
                     <option value="altro">Altro</option>
                   </select>
+                </div>
+                <input type="file" ref={fileRef} accept="image/*" capture="environment" className="hidden" onChange={handleScan} />
+                <button type="button" onClick={() => fileRef.current?.click()} disabled={scanning}
+                  className="w-full h-12 bg-[#F8F7FA] border-[1.5px] border-dashed border-[#EEECF4] rounded-xl text-[14px] font-semibold text-[#6B6478] flex items-center justify-center gap-2 mb-4 active:scale-[0.98] transition-transform disabled:opacity-50">
+                  {scanning ? <div className="w-4 h-4 border-2 border-[#9E96AB]/30 border-t-[#9E96AB] rounded-full animate-spin" /> : <Camera size={18} />}
+                  {scanning ? 'Analisi con Claude Vision...' : 'Scansiona scontrino'}
+                </button>
+
+                {categoria === 'carburante' && (
+                  <div className="space-y-3 mb-4 p-3 bg-[#F8F7FA] rounded-xl">
+                    <p className="text-[11px] font-bold text-[#9E96AB] uppercase tracking-wider">Dettaglio carburante</p>
+                    <select value={campiExtra.tipo_carburante || ''} onChange={e => setCampiExtra(p => ({...p, tipo_carburante: e.target.value}))}
+                      className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none">
+                      <option value="">Tipo carburante</option>
+                      <option value="benzina">Benzina</option>
+                      <option value="gasolio">Gasolio</option>
+                      <option value="gpl">GPL</option>
+                      <option value="metano">Metano</option>
+                      <option value="elettrico">Elettrico</option>
+                    </select>
+                    <div className="flex gap-2">
+                      <input type="number" step="0.01" placeholder="Litri" value={campiExtra.litri || ''}
+                        onChange={e => setCampiExtra(p => ({...p, litri: e.target.value}))}
+                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      <input type="number" step="0.001" placeholder="€/L" value={campiExtra.prezzo_al_litro || ''}
+                        onChange={e => setCampiExtra(p => ({...p, prezzo_al_litro: e.target.value}))}
+                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    </div>
+                    <input type="text" placeholder="Stazione (es. ENI Via Roma)" value={campiExtra.stazione || ''}
+                      onChange={e => setCampiExtra(p => ({...p, stazione: e.target.value}))}
+                      className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                  </div>
+                )}
+
+                {(categoria === 'pranzo' || categoria === 'cena') && (
+                  <div className="space-y-3 mb-4 p-3 bg-[#F8F7FA] rounded-xl">
+                    <p className="text-[11px] font-bold text-[#9E96AB] uppercase tracking-wider">Dettaglio pasto</p>
+                    <input type="text" placeholder="Ristorante / Bar" value={campiExtra.esercente || ''}
+                      onChange={e => setCampiExtra(p => ({...p, esercente: e.target.value}))}
+                      className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    <div className="flex gap-2">
+                      <input type="number" step="1" placeholder="N. persone" value={campiExtra.persone || ''}
+                        onChange={e => setCampiExtra(p => ({...p, persone: e.target.value}))}
+                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      <input type="number" step="0.01" placeholder="Coperto €" value={campiExtra.coperto || ''}
+                        onChange={e => setCampiExtra(p => ({...p, coperto: e.target.value}))}
+                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    </div>
+                  </div>
+                )}
+
+                {categoria === 'alloggio' && (
+                  <div className="space-y-3 mb-4 p-3 bg-[#F8F7FA] rounded-xl">
+                    <p className="text-[11px] font-bold text-[#9E96AB] uppercase tracking-wider">Dettaglio alloggio</p>
+                    <input type="text" placeholder="Nome hotel" value={campiExtra.hotel || ''}
+                      onChange={e => setCampiExtra(p => ({...p, hotel: e.target.value}))}
+                      className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    <div className="flex gap-2">
+                      <div className="flex-1">
+                        <p className="text-[11px] text-[#9E96AB] mb-1">Check-in</p>
+                        <input type="date" value={campiExtra.check_in || ''}
+                          onChange={e => setCampiExtra(p => ({...p, check_in: e.target.value}))}
+                          className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-[11px] text-[#9E96AB] mb-1">Check-out</p>
+                        <input type="date" value={campiExtra.check_out || ''}
+                          onChange={e => setCampiExtra(p => ({...p, check_out: e.target.value}))}
+                          className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      </div>
+                    </div>
+                    <div className="flex gap-2">
+                      <input type="number" step="1" placeholder="Notti" value={campiExtra.notti || ''}
+                        onChange={e => setCampiExtra(p => ({...p, notti: e.target.value}))}
+                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      <input type="number" step="0.01" placeholder="€/notte" value={campiExtra.importo_notte || ''}
+                        onChange={e => setCampiExtra(p => ({...p, importo_notte: e.target.value}))}
+                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    </div>
+                  </div>
+                )}
+
+                {categoria === 'pedaggi' && (
+                  <div className="space-y-3 mb-4 p-3 bg-[#F8F7FA] rounded-xl">
+                    <p className="text-[11px] font-bold text-[#9E96AB] uppercase tracking-wider">Dettaglio pedaggi</p>
+                    <div className="flex gap-2">
+                      <input type="text" placeholder="Da (es. Milano)" value={campiExtra.da || ''}
+                        onChange={e => setCampiExtra(p => ({...p, da: e.target.value}))}
+                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      <input type="text" placeholder="A (es. Roma)" value={campiExtra.a || ''}
+                        onChange={e => setCampiExtra(p => ({...p, a: e.target.value}))}
+                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    </div>
+                  </div>
+                )}
+
+                {categoria === 'trasporto' && (
+                  <div className="space-y-3 mb-4 p-3 bg-[#F8F7FA] rounded-xl">
+                    <p className="text-[11px] font-bold text-[#9E96AB] uppercase tracking-wider">Dettaglio trasporto</p>
+                    <select value={campiExtra.tipo || ''} onChange={e => setCampiExtra(p => ({...p, tipo: e.target.value}))}
+                      className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none">
+                      <option value="">Tipo trasporto</option>
+                      <option value="taxi">Taxi / NCC</option>
+                      <option value="treno">Treno</option>
+                      <option value="aereo">Aereo</option>
+                      <option value="bus">Bus / Pullman</option>
+                      <option value="altro">Altro</option>
+                    </select>
+                    <div className="flex gap-2">
+                      <input type="text" placeholder="Da" value={campiExtra.da || ''}
+                        onChange={e => setCampiExtra(p => ({...p, da: e.target.value}))}
+                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      <input type="text" placeholder="A" value={campiExtra.a || ''}
+                        onChange={e => setCampiExtra(p => ({...p, a: e.target.value}))}
+                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    </div>
+                  </div>
+                )}
+
+                <div className="mb-4">
+                  <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Importo (€) *</label>
+                  <input type="number" step="0.01" value={importo} onChange={e => setImporto(e.target.value.replace(',', '.'))}
+                    placeholder="25.50"
+                    className="w-full px-4 py-3.5 bg-[#F8F7FA] border-[1.5px] border-[#EEECF4] rounded-xl text-[16px] font-bold focus:border-[var(--accent)] outline-none" required />
                 </div>
                 <div className="mb-5">
                   <label className="block text-[13px] font-semibold text-[#6B6478] mb-2">Descrizione</label>

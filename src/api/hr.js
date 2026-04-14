@@ -11,3 +11,4 @@ export const getTurniMese = (mese) => api.get(`/api/hr/turni/?mese=${mese}`).the
 export const inviaNotaSpese = (id) => api.post(`/api/hr/spese/${id}/invia/`).then(r => r.data)
 export const gestisciNotaSpese = (id, azione, note = '') => api.post(`/api/hr/spese/${id}/gestisci/`, { azione, note }).then(r => r.data)
 export const getNoteSpeseTitolare = () => api.get('/api/hr/spese/titolare/').then(r => r.data)
+export const scanScontrino = (formData) => api.post('/api/hr/scan-scontrino/', formData).then(r => r.data)
