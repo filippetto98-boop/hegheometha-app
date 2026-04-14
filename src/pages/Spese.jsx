@@ -44,6 +44,8 @@ export default function Spese() {
   const [motivazione, setMotivazione] = useState('')
   const [tab, setTab] = useState('mie')
   const [campiExtra, setCampiExtra] = useState({})
+  const [fotoScontrino, setFotoScontrino] = useState(null)
+  const [fotoPreview, setFotoPreview] = useState(null)
   const safeBottom = 50
   const fileRef = useRef(null)
 
@@ -72,15 +74,15 @@ export default function Spese() {
       const importoNorm = String(importo).replace(',', '.')
       let descFinale = descrizione || 'Spesa rapida'
       if (categoria === 'carburante' && campiExtra.tipo_carburante) {
-        const parti = [campiExtra.tipo_carburante]
-        if (campiExtra.litri) parti.push(`${campiExtra.litri}L`)
-        if (campiExtra.prezzo_al_litro) parti.push(`@ ${campiExtra.prezzo_al_litro}€/L`)
-        if (campiExtra.stazione) parti.push(`- ${campiExtra.stazione}`)
-        descFinale = parti.join(' ')
+        const tipo = campiExtra.tipo_carburante
+        const litri = campiExtra.litri ? `${campiExtra.litri}L` : ''
+        const prezzo = campiExtra.prezzo_al_litro ? `a ${campiExtra.prezzo_al_litro}€/L` : ''
+        const luogo = [campiExtra.stazione, campiExtra.indirizzo, campiExtra.citta].filter(Boolean).join(', ')
+        descFinale = `Carburante: ${[tipo, litri, prezzo, luogo ? `- ${luogo}` : ''].filter(Boolean).join(' ')}`
       } else if ((categoria === 'pranzo' || categoria === 'cena') && campiExtra.esercente) {
-        const parti = [campiExtra.esercente]
-        if (campiExtra.persone) parti.push(`${campiExtra.persone} persone`)
-        descFinale = parti.join(' - ')
+        const luogo = [campiExtra.indirizzo, campiExtra.citta].filter(Boolean).join(', ')
+        const tipo = categoria === 'pranzo' ? 'Pranzo' : 'Cena'
+        descFinale = `${tipo}: ${campiExtra.esercente}${luogo ? ` - ${luogo}` : ''}`
       } else if (categoria === 'alloggio' && campiExtra.hotel) {
         const parti = [campiExtra.hotel]
         if (campiExtra.notti) parti.push(`${campiExtra.notti} notti`)
@@ -93,9 +95,14 @@ export default function Spese() {
         if (campiExtra.da) parti.push(`${campiExtra.da} → ${campiExtra.a || ''}`)
         descFinale = parti.join(' ')
       }
-      await aggiungiSpesaRapida({ importo: importoNorm, categoria, descrizione: descFinale })
+      const fd = new FormData()
+      fd.append('importo', importoNorm)
+      fd.append('categoria', categoria)
+      fd.append('descrizione', descFinale)
+      if (fotoScontrino) fd.append('scontrino', fotoScontrino)
+      await aggiungiSpesaRapida(fd)
       setMsg({ ok: true, text: 'Spesa aggiunta!' })
-      setImporto(''); setDescrizione(''); setCampiExtra({}); setShowModal(false)
+      setImporto(''); setDescrizione(''); setCampiExtra({}); setFotoScontrino(null); setFotoPreview(null); setShowModal(false)
       setTimeout(() => load(), 500)
     } catch (err) {
       const detail = err.response?.data?.errore
@@ -114,6 +121,8 @@ export default function Spese() {
     setScanning(true)
     setMsg(null)
     try {
+      setFotoScontrino(file)
+      setFotoPreview(URL.createObjectURL(file))
       const fd = new FormData()
       fd.append('immagine', file)
       fd.append('categoria', categoria)
@@ -214,6 +223,12 @@ export default function Spese() {
                         <div>
                           <div className="text-[13px] font-semibold text-[#1A1523]">{s.categoria_display}</div>
                           <div className="text-[11px] text-[#9E96AB]">{formatData(s.data)} — {s.descrizione}</div>
+                          {s.scontrino && (
+                            <a href={s.scontrino} target="_blank" rel="noopener noreferrer">
+                              <img src={s.scontrino} alt="Scontrino"
+                                className="w-16 h-16 object-cover rounded-lg border-[1.5px] border-[#EEECF4] mt-2" />
+                            </a>
+                          )}
                         </div>
                         <span className="text-[14px] font-bold text-[#1A1523]">€ {Number(s.importo).toFixed(2)}</span>
                       </div>
@@ -431,29 +446,66 @@ export default function Spese() {
                   {scanning ? 'Analisi con Claude Vision...' : 'Scansiona scontrino'}
                 </button>
 
+                {fotoPreview && (
+                  <div className="relative mb-4">
+                    <img src={fotoPreview} alt="Scontrino"
+                      className="w-full max-h-40 object-contain rounded-xl border-[1.5px] border-[#EEECF4]" />
+                    <button type="button" onClick={() => { setFotoScontrino(null); setFotoPreview(null) }}
+                      className="absolute top-2 right-2 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow text-[#9E96AB]">
+                      <X size={14} />
+                    </button>
+                  </div>
+                )}
+
                 {categoria === 'carburante' && (
                   <div className="space-y-3 mb-4 p-3 bg-[#F8F7FA] rounded-xl">
                     <p className="text-[11px] font-bold text-[#9E96AB] uppercase tracking-wider">Dettaglio carburante</p>
-                    <select value={campiExtra.tipo_carburante || ''} onChange={e => setCampiExtra(p => ({...p, tipo_carburante: e.target.value}))}
-                      className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none">
-                      <option value="">Tipo carburante</option>
-                      <option value="benzina">Benzina</option>
-                      <option value="gasolio">Gasolio</option>
-                      <option value="gpl">GPL</option>
-                      <option value="metano">Metano</option>
-                      <option value="elettrico">Elettrico</option>
-                    </select>
-                    <div className="flex gap-2">
-                      <input type="number" step="0.01" placeholder="Litri" value={campiExtra.litri || ''}
-                        onChange={e => setCampiExtra(p => ({...p, litri: e.target.value}))}
-                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
-                      <input type="number" step="0.001" placeholder="€/L" value={campiExtra.prezzo_al_litro || ''}
-                        onChange={e => setCampiExtra(p => ({...p, prezzo_al_litro: e.target.value}))}
-                        className="flex-1 px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    <div>
+                      <p className="text-[11px] text-[#9E96AB] mb-1">Tipo carburante</p>
+                      <select value={campiExtra.tipo_carburante || ''} onChange={e => setCampiExtra(p => ({...p, tipo_carburante: e.target.value}))}
+                        className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none">
+                        <option value="">Seleziona tipo</option>
+                        <option value="Benzina">Benzina</option>
+                        <option value="Diesel">Diesel</option>
+                        <option value="GPL">GPL</option>
+                        <option value="Metano">Metano</option>
+                        <option value="Elettrico">Elettrico</option>
+                      </select>
                     </div>
-                    <input type="text" placeholder="Stazione (es. ENI Via Roma)" value={campiExtra.stazione || ''}
-                      onChange={e => setCampiExtra(p => ({...p, stazione: e.target.value}))}
-                      className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    <div className="flex gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-[#9E96AB] mb-1">Litri</p>
+                        <input type="number" step="0.01" placeholder="es. 30.75" value={campiExtra.litri || ''}
+                          onChange={e => setCampiExtra(p => ({...p, litri: e.target.value}))}
+                          className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-[#9E96AB] mb-1">Prezzo €/L</p>
+                        <input type="number" step="0.001" placeholder="es. 1.649" value={campiExtra.prezzo_al_litro || ''}
+                          onChange={e => setCampiExtra(p => ({...p, prezzo_al_litro: e.target.value}))}
+                          className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      </div>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-[#9E96AB] mb-1">Nome stazione</p>
+                      <input type="text" placeholder="es. ENI, Q8, MY OIL" value={campiExtra.stazione || ''}
+                        onChange={e => setCampiExtra(p => ({...p, stazione: e.target.value}))}
+                        className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    </div>
+                    <div className="flex gap-2">
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-[#9E96AB] mb-1">Indirizzo</p>
+                        <input type="text" placeholder="es. Via Aurelia 538" value={campiExtra.indirizzo || ''}
+                          onChange={e => setCampiExtra(p => ({...p, indirizzo: e.target.value}))}
+                          className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[11px] text-[#9E96AB] mb-1">Città</p>
+                        <input type="text" placeholder="es. Roma" value={campiExtra.citta || ''}
+                          onChange={e => setCampiExtra(p => ({...p, citta: e.target.value}))}
+                          className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      </div>
+                    </div>
                   </div>
                 )}
 
@@ -462,6 +514,12 @@ export default function Spese() {
                     <p className="text-[11px] font-bold text-[#9E96AB] uppercase tracking-wider">Dettaglio pasto</p>
                     <input type="text" placeholder="Ristorante / Bar" value={campiExtra.esercente || ''}
                       onChange={e => setCampiExtra(p => ({...p, esercente: e.target.value}))}
+                      className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    <input type="text" placeholder="Indirizzo" value={campiExtra.indirizzo || ''}
+                      onChange={e => setCampiExtra(p => ({...p, indirizzo: e.target.value}))}
+                      className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                    <input type="text" placeholder="Città" value={campiExtra.citta || ''}
+                      onChange={e => setCampiExtra(p => ({...p, citta: e.target.value}))}
                       className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
                     <div className="flex gap-2">
                       <input type="number" step="1" placeholder="N. persone" value={campiExtra.persone || ''}
