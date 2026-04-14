@@ -4,7 +4,7 @@ import Layout from '../components/Layout'
 import Card from '../components/Card'
 import LoadingSpinner from '../components/LoadingSpinner'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Receipt, Plus, X, Camera, ChevronDown, Send, CheckCircle, XCircle, Banknote } from 'lucide-react'
+import { Receipt, Plus, X, Camera, ChevronDown, Send, CheckCircle, XCircle, Banknote, Trash2 } from 'lucide-react'
 
 const STATI = {
   bozza: 'bg-gray-100 text-gray-600',
@@ -153,6 +153,21 @@ export default function Spese() {
     }
   }
 
+  const eliminaNota = async (notaId) => {
+    if (!window.confirm('Eliminare questa nota spese?')) return
+    setActionLoading(notaId)
+    try {
+      await fetch(`/api/hr/spese/${notaId}/elimina/`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${localStorage.getItem('access')}` }
+      })
+      setMsg({ ok: true, text: 'Nota eliminata' })
+      setTimeout(() => load(), 500)
+    } catch {
+      setMsg({ ok: false, text: 'Errore eliminazione' })
+    } finally { setActionLoading(null) }
+  }
+
   const handleInvia = async (notaId) => {
     setActionLoading(notaId)
     try {
@@ -251,13 +266,21 @@ export default function Spese() {
 
                 {/* Azioni dipendente */}
                 {!isTitolareView && n.stato === 'bozza' && (
-                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => handleInvia(n.id)}
-                    disabled={actionLoading === n.id}
-                    className="w-full h-11 bg-[var(--accent)] text-white rounded-xl font-bold text-[14px] flex items-center justify-center gap-2 mt-3 disabled:opacity-50">
-                    {actionLoading === n.id
-                      ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      : <><Send size={16} /> Invia al titolare</>}
-                  </motion.button>
+                  <div className="flex gap-2 mt-3">
+                    <button onClick={() => eliminaNota(n.id)}
+                      disabled={actionLoading === n.id}
+                      className="flex-1 h-11 rounded-xl text-[14px] font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                      style={{background:'#FEE2E2', color:'#DC2626'}}>
+                      <Trash2 size={16} /> Elimina
+                    </button>
+                    <button onClick={() => handleInvia(n.id)}
+                      disabled={actionLoading === n.id}
+                      className="flex-1 h-11 bg-[var(--accent)] rounded-xl text-[14px] font-bold text-white flex items-center justify-center gap-2 disabled:opacity-50">
+                      {actionLoading === n.id
+                        ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                        : <><Send size={16} /> Invia al titolare</>}
+                    </button>
+                  </div>
                 )}
 
                 {/* Azioni titolare */}
