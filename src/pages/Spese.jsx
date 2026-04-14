@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getSpese, aggiungiSpesaRapida, inviaNotaSpese, gestisciNotaSpese, getNoteSpeseTitolare, scanScontrino } from '../api/hr'
+import { getSpese, aggiungiSpesaRapida, inviaNotaSpese, gestisciNotaSpese, getNoteSpeseTitolare, scanScontrino, eliminaNotaSpese } from '../api/hr'
 import Layout from '../components/Layout'
 import Card from '../components/Card'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -157,10 +157,7 @@ export default function Spese() {
     if (!window.confirm('Eliminare questa nota spese?')) return
     setActionLoading(notaId)
     try {
-      await fetch(`/api/hr/spese/${notaId}/elimina/`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${localStorage.getItem('access')}` }
-      })
+      await eliminaNotaSpese(notaId)
       setMsg({ ok: true, text: 'Nota eliminata' })
       setTimeout(() => load(), 500)
     } catch {
