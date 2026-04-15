@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { isLoggedIn, getStoredUser } from './api/auth'
+import { applicaColoreAzienda } from './utils/theme'
 import Login from './pages/Login'
 import DashboardDipendente from './pages/DashboardDipendente'
 import DashboardTitolare from './pages/DashboardTitolare'
@@ -10,12 +11,6 @@ import Ferie from './pages/Ferie'
 import Spese from './pages/Spese'
 import Calendario from './pages/Calendario'
 
-function applyAccentColor() {
-  const user = getStoredUser()
-  if (user?.azienda?.colore_primario) {
-    document.documentElement.style.setProperty('--accent', user.azienda.colore_primario)
-  }
-}
 
 function ProtectedRoute({ children, ruolo }) {
   if (!isLoggedIn()) return <Navigate to="/login" replace />
@@ -37,12 +32,12 @@ function HomeRedirect() {
 
 function AccentWatcher({ children }) {
   const location = useLocation()
-  useEffect(() => { applyAccentColor() }, [location.pathname])
+  useEffect(() => { applicaColoreAzienda() }, [location.pathname])
   return children
 }
 
 export default function App() {
-  useEffect(() => { applyAccentColor() }, [])
+  useEffect(() => { applicaColoreAzienda() }, [])
 
   return (
     <BrowserRouter>

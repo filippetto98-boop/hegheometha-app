@@ -1,4 +1,5 @@
 import api from './client'
+import { applicaColoreAzienda } from '../utils/theme'
 
 export async function login(username, password) {
   const res = await api.post('/api/token/', { username, password })
@@ -18,6 +19,7 @@ export function logout() {
 export async function getMe() {
   const res = await api.get('/api/me/')
   localStorage.setItem('user', JSON.stringify(res.data))
+  applicaColoreAzienda()
   return res.data
 }
 
