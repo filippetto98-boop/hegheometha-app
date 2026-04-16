@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
-import { getSpese, aggiungiSpesaRapida, inviaNotaSpese, gestisciNotaSpese, getNoteSpeseTitolare, scanScontrino, eliminaNotaSpese } from '../api/hr'
+import { getSpese, aggiungiSpesaRapida, inviaNotaSpese, gestisciNotaSpese, getNoteSpeseTitolare, scanScontrino, eliminaNotaSpese, getVeicoli } from '../api/hr'
 import Layout from '../components/Layout'
 import Card from '../components/Card'
 import LoadingSpinner from '../components/LoadingSpinner'
@@ -46,6 +46,7 @@ export default function Spese() {
   const [campiExtra, setCampiExtra] = useState({})
   const [fotoScontrino, setFotoScontrino] = useState(null)
   const [fotoPreview, setFotoPreview] = useState(null)
+  const [veicoli, setVeicoli] = useState([])
   const safeBottom = 50
   const fileRef = useRef(null)
 
@@ -53,7 +54,10 @@ export default function Spese() {
   const isTitolare = user.ruolo === 'titolare'
 
   const load = () => {
-    const promises = [getSpese().then(setData).catch(() => {})]
+    const promises = [
+      getSpese().then(setData).catch(() => {}),
+      getVeicoli().then(r => setVeicoli(r.veicoli || [])).catch(() => {}),
+    ]
     if (isTitolare) promises.push(getNoteSpeseTitolare().then(setTitolareData).catch(() => {}))
     Promise.all(promises).finally(() => setLoading(false))
   }
@@ -100,6 +104,13 @@ export default function Spese() {
       fd.append('categoria', categoria)
       fd.append('descrizione', descFinale)
       if (fotoScontrino) fd.append('scontrino', fotoScontrino)
+      if (categoria === 'carburante') {
+        if (campiExtra.litri) fd.append('litri', campiExtra.litri)
+        if (campiExtra.prezzo_al_litro) fd.append('prezzo_al_litro', campiExtra.prezzo_al_litro)
+        if (campiExtra.tipo_carburante) fd.append('tipo_carburante', campiExtra.tipo_carburante)
+        if (campiExtra.veicolo_id) fd.append('veicolo_id', campiExtra.veicolo_id)
+        fd.append('carta_aziendale', campiExtra.carta_aziendale ? 'true' : 'false')
+      }
       await aggiungiSpesaRapida(fd)
       setMsg({ ok: true, text: 'Spesa aggiunta!' })
       setImporto(''); setDescrizione(''); setCampiExtra({}); setFotoScontrino(null); setFotoPreview(null); setShowModal(false)
@@ -527,6 +538,36 @@ export default function Spese() {
                         <input type="text" placeholder="es. Roma" value={campiExtra.citta || ''}
                           onChange={e => setCampiExtra(p => ({...p, citta: e.target.value}))}
                           className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none" />
+                      </div>
+                    </div>
+                    {veicoli.length > 0 && (
+                      <div style={{marginTop:'8px'}}>
+                        <p className="text-[11px] text-[#9E96AB] mb-1">Veicolo (opzionale)</p>
+                        <select
+                          value={campiExtra.veicolo_id || ''}
+                          onChange={e => setCampiExtra(p => ({...p, veicolo_id: e.target.value}))}
+                          className="w-full px-3 py-2.5 bg-white border-[1.5px] border-[#EEECF4] rounded-xl text-[14px] focus:border-[var(--accent)] outline-none">
+                          <option value="">-- Nessun veicolo --</option>
+                          {veicoli.map(v => (
+                            <option key={v.id} value={v.id}>{v.targa} — {v.marca} {v.modello}</option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
+                    <div style={{marginTop:'12px',padding:'12px',background:'rgba(0,0,0,0.03)',borderRadius:'12px',border:'1px solid #EEECF4'}}>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}>
+                        <div>
+                          <div style={{fontSize:'14px',fontWeight:'600',color:'#1A1523'}}>Carta aziendale</div>
+                          <div style={{fontSize:'12px',color:'#9E96AB',marginTop:'2px'}}>
+                            Nessuna approvazione richiesta
+                          </div>
+                        </div>
+                        <input
+                          type="checkbox"
+                          checked={campiExtra.carta_aziendale || false}
+                          onChange={e => setCampiExtra(p => ({...p, carta_aziendale: e.target.checked}))}
+                          style={{width:'20px',height:'20px',accentColor:'var(--accent)'}}
+                        />
                       </div>
                     </div>
                   </div>

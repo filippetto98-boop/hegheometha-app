@@ -18,3 +18,4 @@ export const gestisciNotaSpese = (id, azione, note = '') => api.post(`/api/hr/sp
 export const getNoteSpeseTitolare = () => api.get('/api/hr/spese/titolare/').then(r => r.data)
 export const scanScontrino = (formData) => api.post('/api/hr/scan-scontrino/', formData).then(r => r.data)
 export const eliminaNotaSpese = (id) => api.delete(`/api/hr/spese/${id}/elimina/`).then(r => r.data)
+export const getVeicoli = () => api.get('/api/veicoli/').then(r => r.data)
