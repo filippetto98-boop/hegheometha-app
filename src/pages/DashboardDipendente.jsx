@@ -206,6 +206,21 @@ export default function DashboardDipendente() {
         </div>
         <p className="text-xs text-[#9E96AB] mt-0.5">Totale mese corrente</p>
       </Card>
+
+      {/* Prenotazioni */}
+      <Card className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <div className="flex items-center gap-2">
+            <Calendar size={16} className="text-[var(--accent)]" />
+            <span className="text-[11px] font-bold text-[#9E96AB] uppercase tracking-wider">Prenotazioni</span>
+          </div>
+          <button onClick={() => navigate('/prenotazioni')}
+            className="text-xs font-bold text-[var(--accent)] flex items-center gap-1">
+            Vedi tutte <ChevronRight size={14} />
+          </button>
+        </div>
+        <p className="text-xs text-[#9E96AB] mt-0.5">Gestisci gli appuntamenti</p>
+      </Card>
     </Layout>
   )
 }

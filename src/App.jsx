@@ -10,6 +10,7 @@ import Notifiche from './pages/Notifiche'
 import Ferie from './pages/Ferie'
 import Spese from './pages/Spese'
 import Calendario from './pages/Calendario'
+import Prenotazioni from './pages/Prenotazioni'
 
 
 function ProtectedRoute({ children, ruolo }) {
@@ -65,6 +66,9 @@ export default function App() {
           } />
           <Route path="/calendario" element={
             <ProtectedRoute ruolo="dipendente"><Calendario /></ProtectedRoute>
+          } />
+          <Route path="/prenotazioni" element={
+            <ProtectedRoute><Prenotazioni /></ProtectedRoute>
           } />
         </Routes>
       </AccentWatcher>

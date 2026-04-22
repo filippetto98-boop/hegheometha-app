@@ -10,6 +10,7 @@ export default function BottomNav() {
   const items = isTitolare
     ? [
         { to: '/titolare', icon: Home, label: 'Dashboard' },
+        { to: '/prenotazioni', icon: Calendar, label: 'Prenotazioni' },
         { to: '/magazzino', icon: Package, label: 'Magazzino' },
         { to: '/notifiche', icon: Bell, label: 'Notifiche' },
       ]
