@@ -467,6 +467,7 @@ export default function Spese() {
                     <option value="pranzo">Pranzo</option>
                     <option value="cena">Cena</option>
                     <option value="pedaggi">Pedaggi</option>
+                    <option value="parcheggio">Parcheggio</option>
                     <option value="alloggio">Alloggio</option>
                     <option value="trasporto">Trasporto</option>
                     <option value="materiale">Materiale</option>
